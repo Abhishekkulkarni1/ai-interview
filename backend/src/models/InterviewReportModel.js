@@ -87,7 +87,7 @@ const interviewReportSchema = new mongoose.Schema(
       max: 100,
     },
     technicalQuestions: [technicalQuestionSchema],
-    behaviouralQuestions: [behaviouralQuestionSchema],
+    behavioralQuestions: [behaviouralQuestionSchema],
     skillGaps: [skillGapSchema],
     preparationPlan: [preparationPlanSchema],
     user: {
@@ -98,9 +98,25 @@ const interviewReportSchema = new mongoose.Schema(
       type: String,
       required: [false, "Title is a required field"],
     },
+    analysis: {
+      type: String,
+    },
+
+    strengths: [
+      {
+        type: String,
+      },
+    ],
+
+    weaknesses: [
+      {
+        type: String,
+      },
+    ],
   },
   {
     timestamps: true,
+    strict: true
   },
 );
 

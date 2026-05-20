@@ -1,6 +1,6 @@
 const { GoogleGenAI } = require("@google/genai");
 const { z } = require("zod");
-const { zodToJsonSchema } = require("zod-to-json-schema");
+// const { zodToJsonSchema } = require("zod-to-json-schema");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -116,6 +116,12 @@ const interviewReportSchema = z.object({
     .describe(
       "A structured, practical, and realistic interview preparation roadmap customized to the candidate's skill gaps, target role, and experience level. The plan should prioritize high-impact preparation areas first.",
     ),
+
+  analysis: z.string(),
+
+  strengths: z.array(z.string()),
+
+  weaknesses: z.array(z.string()),
 });
 
 const generateInterviewReport = async ({
@@ -124,128 +130,114 @@ const generateInterviewReport = async ({
   jobDescription,
 }) => {
   const prompt = `
-    You are an experienced senior technical interviewer, recruiter, and hiring manager.
+You are an expert technical interviewer and recruiter.
 
-    Your task is to generate a highly realistic and personalized interview preparation report for a candidate.
+Analyze the candidate based on:
+1. Resume
+2. Self description
+3. Job description
 
-    Analyze the candidate deeply using:
-    1. Resume
-    2. Self description
-    3. Job description
+Generate a realistic interview preparation report.
 
-    Your analysis must be:
-    - evidence-based
-    - role-specific
-    - technically accurate
-    - realistic to actual hiring standards
-    - tailored to the candidate's experience level
+IMPORTANT RULES:
+- Return ONLY valid JSON
+- No markdown
+- No explanations
+- No extra text
+- Follow the exact structure below
+- All arrays must contain objects, not flat strings
+- Use camelCase keys only
+- Return ONLY raw JSON.
+- Do not wrap in markdown.
+- Do not add explanations.
+- Do not add text before or after JSON.
 
-    Do NOT generate generic interview advice.
+Expected JSON structure:
 
-    Carefully evaluate:
-    - skill alignment
-    - project relevance
-    - technical depth
-    - missing technologies
-    - domain fit
-    - experience quality
-    - likely recruiter concerns
-    - strengths and weaknesses
+{
+  "title": string,
+  "matchScore": number,
+  "analysis": string,
+  "strengths": string[],
+  "weaknesses": string[],
 
-    -----------------------------------
-    IMPORTANT INSTRUCTIONS
-    -----------------------------------
+  "technicalQuestions": [
+    {
+      "question": string,
+      "intention": string,
+      "answer": string
+    }
+  ],
 
-    MATCH SCORE:
-    - Give a realistic score between 0 and 100.
-    - Do NOT inflate scores.
-    - Consider actual competitiveness for interviews.
-    - Missing mandatory skills should reduce the score significantly.
+  "behavioralQuestions": [
+    {
+      "question": string,
+      "intention": string,
+      "answer": string
+    }
+  ],
 
-    TECHNICAL QUESTIONS:
-    - Generate realistic interview questions likely to be asked in real interviews.
-    - Questions should be tailored to:
-    - technologies in the resume
-    - job requirements
-    - candidate experience
-    - projects mentioned
-    - Avoid textbook definitions unless genuinely relevant.
-    - Prefer practical, debugging, architecture, scalability, optimization, and implementation-focused questions.
+  "skillGaps": [
+    {
+      "skill": string,
+      "severity": "low" | "medium" | "high"
+    }
+  ],
 
-    QUESTION INTENTION:
-    - Explain what the interviewer is truly evaluating.
-    - Mention concepts, depth, problem-solving ability, communication, scalability thinking, debugging skills, or practical knowledge being tested.
+  "preparationPlan": [
+    {
+      "day": number,
+      "focus": string,
+      "tasks": string[]
+    }
+  ]
+}
 
-    ANSWER GUIDANCE:
-    - Explain how the candidate should approach answering.
-    - Mention:
-    - key concepts to include
-    - ideal structure
-    - practical examples to discuss
-    - common mistakes to avoid
-    - what strong candidates usually say
+Requirements:
+- matchScore must be between 0 and 100
+- technicalQuestions should be practical and role-specific
+- behavioralQuestions should evaluate communication, ownership, teamwork, and problem-solving
+- skillGaps should identify realistic missing skills
+- preparationPlan should be actionable and day-wise
+- strengths and weaknesses should be concise bullet-style points
 
-    BEHAVIORAL QUESTIONS:
-    - Tailor them to the candidate profile.
-    - Focus on:
-    - teamwork
-    - ownership
-    - leadership
-    - conflict resolution
-    - communication
-    - learning ability
-    - pressure handling
-    - project challenges
+CANDIDATE RESUME:
+${resume}
 
-    SKILL GAPS:
-    - Identify realistic missing skills or weak areas.
-    - Include both technical and professional gaps if relevant.
-    - Severity should reflect how critical the missing skill is for the role.
+SELF DESCRIPTION:
+${selfDescription}
 
-    PREPARATION PLAN:
-    - Create a practical day-wise roadmap.
-    - Prioritize high-impact improvements first.
-    - Tasks should be actionable and specific.
-    - Avoid vague tasks like "study Node.js".
-    - Instead use tasks like:
-    - "Build authentication using JWT and refresh tokens"
-    - "Practice 10 medium-level array problems"
-    - "Revise event loop and async internals"
-
-    OUTPUT RULES:
-    - Return ONLY valid JSON.
-    - Follow the provided schema exactly.
-    - Do not include markdown.
-    - Do not include explanations outside JSON.
-
-    -----------------------------------
-    CANDIDATE RESUME
-    -----------------------------------
-
-    ${resume}
-
-    -----------------------------------
-    SELF DESCRIPTION
-    -----------------------------------
-
-    ${selfDescription}
-
-    -----------------------------------
-    JOB DESCRIPTION
-    -----------------------------------
-
-    ${jobDescription}`;
+JOB DESCRIPTION:
+${jobDescription}
+`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: zodToJsonSchema(interviewReportSchema),
+      // responseSchema: zodToJsonSchema(interviewReportSchema),
     },
   });
 
-  return JSON.parse(response.text);
+  // return JSON.parse(response.text);
+  const parsedResponse = JSON.parse(response.text);
+
+  console.log(
+    JSON.stringify(parsedResponse, null, 2),
+    "RAW AI RESPONSE"
+  );
+
+  const validationResult =
+    interviewReportSchema.safeParse(parsedResponse);
+
+  if (!validationResult.success) {
+    console.log(validationResult.error.format());
+
+    throw new Error("Invalid AI response format");
+  }
+
+  return validationResult.data;
 };
 
 module.exports = { generateInterviewReport };
