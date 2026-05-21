@@ -25,14 +25,14 @@ export const generateInterviewReport = async ({ jobDescription, selfDescription,
 
 
 export const getInterviewReportById = async (interviewId) => {
-    const response = await api.get(`/api/interview/report/${interviewId}`)
+    const response = await api.get(`/api/interview/ai/report/${interviewId}`)
 
     return response.data
 }
 
 
 export const getAllInterviewReports = async () => {
-    const response = await api.get("/api/interview/")
+    const response = await api.get("/api/interview/ai/allReports")
 
     return response.data
 }
