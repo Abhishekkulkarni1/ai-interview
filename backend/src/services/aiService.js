@@ -498,7 +498,7 @@ ${jobDescription}
       // responseSchema: zodToJsonSchema(resumePdfSchema),
     }
   })
-
+  console.log(response, "response logged");
   const jsonContent = JSON.parse(response.text)
 
   const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
