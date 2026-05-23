@@ -1,6 +1,7 @@
 const { GoogleGenAI } = require("@google/genai");
 const { z } = require("zod");
-// const { zodToJsonSchema } = require("zod-to-json-schema");
+const { zodToJsonSchema } = require("zod-to-json-schema");
+const puppeteer = require("puppeteer");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -223,11 +224,6 @@ ${jobDescription}
   // return JSON.parse(response.text);
   const parsedResponse = JSON.parse(response.text);
 
-  console.log(
-    JSON.stringify(parsedResponse, null, 2),
-    "RAW AI RESPONSE"
-  );
-
   const validationResult =
     interviewReportSchema.safeParse(parsedResponse);
 
@@ -240,4 +236,272 @@ ${jobDescription}
   return validationResult.data;
 };
 
-module.exports = { generateInterviewReport };
+const generatePdfFromHtml = async (htmlContent) => {
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+    ]
+  })
+
+  const page = await browser.newPage()
+
+  await page.setViewport({
+    width: 1440,
+    height: 2000,
+    deviceScaleFactor: 2,
+  })
+
+  await page.setContent(htmlContent, {
+    waitUntil: "networkidle0"
+  })
+
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+
+    printBackground: true,
+
+    margin: {
+      top: "20mm",
+      right: "15mm",
+      bottom: "20mm",
+      left: "15mm",
+    },
+
+    preferCSSPageSize: true,
+  })
+
+  await browser.close()
+  return pdfBuffer
+}
+
+const generateResumePdf = async ({
+  resume,
+  selfDescription,
+  jobDescription,
+}) => {
+
+  const resumePdfSchema = z.object({
+    html: z.string().describe(`
+      Complete production-ready HTML document for a professional ATS-friendly resume.
+      Must include valid semantic HTML and inline CSS.
+      Should be directly renderable by Puppeteer without additional processing.
+    `)
+  })
+
+  const prompt = `
+You are an elite executive resume writer, technical recruiter, ATS optimization expert, and hiring manager.
+
+Your task is to generate a highly professional, modern, ATS-friendly resume tailored specifically for the provided job description.
+
+You must deeply analyze:
+- candidate resume
+- candidate self description
+- target job description
+
+The final resume should maximize interview chances for THIS specific role.
+
+---------------------------------------------------
+PRIMARY OBJECTIVE
+---------------------------------------------------
+
+Create a realistic, human-quality resume that:
+- sounds naturally written
+- does NOT sound AI-generated
+- emphasizes measurable impact
+- highlights role-relevant experience
+- improves recruiter readability
+- passes ATS parsing systems
+- is optimized for shortlisting
+
+The resume should feel like it was written by a top-tier professional resume consultant.
+
+---------------------------------------------------
+CRITICAL RESUME RULES
+---------------------------------------------------
+
+1. NEVER invent fake experience.
+2. NEVER invent companies or projects.
+3. NEVER add skills not supported by the input.
+4. You MAY:
+   - rewrite bullet points
+   - improve wording
+   - reorganize content
+   - prioritize relevant experience
+   - improve achievement phrasing
+   - optimize ATS keywords
+   - improve formatting
+
+5. Focus heavily on:
+   - measurable achievements
+   - technical depth
+   - business impact
+   - scalability
+   - ownership
+   - engineering quality
+
+6. Avoid:
+   - buzzword stuffing
+   - generic statements
+   - vague claims
+   - repetitive wording
+   - AI-sounding phrases like:
+     - "results-driven"
+     - "highly motivated"
+     - "hardworking individual"
+     - "passionate professional"
+
+7. Every bullet point should ideally:
+   - start with strong action verbs
+   - contain technical specifics
+   - include impact/results where possible
+
+---------------------------------------------------
+ATS OPTIMIZATION RULES
+---------------------------------------------------
+
+The resume MUST:
+- be ATS parsable
+- use clean semantic HTML
+- avoid tables for layout
+- avoid multi-column ATS-breaking structures
+- avoid icons/images/svg
+- avoid overly complex design
+- avoid absolute positioning
+- avoid hidden text
+
+Use:
+- clean hierarchy
+- proper headings
+- readable spacing
+- semantic sections
+
+---------------------------------------------------
+HTML REQUIREMENTS
+---------------------------------------------------
+
+Return COMPLETE HTML including:
+- <!DOCTYPE html>
+- <html>
+- <head>
+- <style>
+- <body>
+
+The HTML must be directly usable in Puppeteer.
+
+Use ONLY:
+- inline CSS or internal <style>
+- system-safe fonts
+- responsive layout
+- print-friendly spacing
+
+---------------------------------------------------
+VISUAL DESIGN RULES
+---------------------------------------------------
+
+The design should be:
+- modern
+- premium
+- minimal
+- recruiter-friendly
+- professional
+
+Style inspiration:
+- clean FAANG-style resumes
+- modern technical resumes
+- subtle typography hierarchy
+
+Allowed:
+- subtle accent colors
+- section dividers
+- skill tags
+- modern spacing
+
+Avoid:
+- flashy graphics
+- dark backgrounds
+- excessive colors
+- decorative elements
+- complicated layouts
+
+---------------------------------------------------
+LENGTH RULES
+---------------------------------------------------
+
+- Prefer 1 page
+- Maximum 2 pages
+- Prioritize relevance over completeness
+- Most important information should appear first
+
+---------------------------------------------------
+TAILORING REQUIREMENTS
+---------------------------------------------------
+
+Aggressively tailor the resume toward the target role.
+
+Prioritize:
+- matching technologies
+- matching frameworks
+- relevant projects
+- relevant architecture experience
+- domain alignment
+- scalability work
+- backend/frontend alignment
+- cloud/devops experience if relevant
+
+Mirror important job-description terminology naturally.
+
+---------------------------------------------------
+OUTPUT FORMAT RULES
+---------------------------------------------------
+
+Return ONLY valid JSON.
+
+The JSON must contain:
+{
+  "html": "full html here"
+}
+
+Do NOT:
+- wrap response in markdown
+- include explanations
+- include notes
+- include comments
+
+---------------------------------------------------
+CANDIDATE RESUME
+---------------------------------------------------
+
+${resume}
+
+---------------------------------------------------
+SELF DESCRIPTION
+---------------------------------------------------
+
+${selfDescription}
+
+---------------------------------------------------
+JOB DESCRIPTION
+---------------------------------------------------
+
+${jobDescription}
+`
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      // responseSchema: zodToJsonSchema(resumePdfSchema),
+    }
+  })
+
+  const jsonContent = JSON.parse(response.text)
+
+  const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
+  return pdfBuffer
+}
+
+module.exports = { generateInterviewReport, generateResumePdf };

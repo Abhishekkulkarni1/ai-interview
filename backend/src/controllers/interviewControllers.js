@@ -1,7 +1,7 @@
 require("dotenv").config();
 const pdfParse = require("pdf-parse");
 const interviewReportModel = require("../models/InterviewReportModel");
-const { generateInterviewReport } = require("../services/aiService");
+const { generateInterviewReport, generateResumePdf } = require("../services/aiService");
 
 const generateAiInterviewReport = async (req, res) => {
   try {
@@ -87,12 +87,12 @@ const getAllInterviewReports = async (req, res) => {
   }
 };
 
-const generateResumePdf = async (req, res) => {
+const downloadResumePdf = async (req, res) => {
   try {
     const { interviewReportId } = req.params;
     console.log(interviewReportId);
     const interviewReport = await interviewReportModel.findById(
-      "6a0dde1570b11c59442994be",
+      interviewReportId,
     );
 
     if (!interviewReport) {
@@ -108,7 +108,6 @@ const generateResumePdf = async (req, res) => {
       jobDescription,
       selfDescription,
     });
-
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf`,
@@ -128,5 +127,5 @@ module.exports = {
   generateAiInterviewReport,
   getInterviewReportById,
   getAllInterviewReports,
-  generateResumePdf,
+  downloadResumePdf,
 };
