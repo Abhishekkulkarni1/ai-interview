@@ -5,11 +5,12 @@
   padding-block: 0.5rem;
   border-radius: 1rem;
   cursor: pointer;
+  text-decoration: none;
 
   transition: all 0.2s ease-in-out;
 
   &.primary-button {
-    background-color: #a89400;
+    background-color: #d20d3b;
     color: white;
   }
 
