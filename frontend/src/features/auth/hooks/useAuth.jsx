@@ -1,14 +1,13 @@
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { AuthContext } from "../authContext";
-import {
-  registerUser,
-  loginUser,
-  logoutUser,
-  userDetails,
-} from "../services/authApi";
+import { registerUser, loginUser, logoutUser } from "../services/authApi";
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
   const { user, setUser, loading, setLoading } = context;
 
   const handleRegister = async ({ username, email, password }) => {
@@ -38,7 +37,7 @@ export const useAuth = () => {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      const data = await logoutUser();
+      await logoutUser();
       setUser(null);
     } catch (error) {
       console.log(error, "Error occured while handling logout in hooks");
@@ -46,30 +45,6 @@ export const useAuth = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const getAndSetUser = async () => {
-      setLoading(true);
-      try {
-        const data = await userDetails();
-        if (data?.user) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.log(
-          error,
-          "Error occured while handling getting user in hooks",
-        );
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getAndSetUser();
-  }, []);
 
   return { user, loading, handleRegister, handleLogin, handleLogout };
 };
