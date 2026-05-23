@@ -6,7 +6,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const authorize = async (req, res, next) => {
   try {
-    console.log(req.cookies, "cookies logged")
     const token = req.cookies.token;
     if (!token) {
       return res.status(401).json({
@@ -14,8 +13,6 @@ const authorize = async (req, res, next) => {
         message: "Token not found in the request",
       });
     }
-    console.log(token, "token logged")
-    console.log(JWT_SECRET, "JWT_SECRET logged")
     const isBlacklistedToken = await tokenBlacklistModel.findOne({ token });
     if (isBlacklistedToken) {
       return res.status(401).json({

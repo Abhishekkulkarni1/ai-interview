@@ -109,6 +109,7 @@ const downloadResumePdf = async (req, res) => {
       jobDescription,
       selfDescription,
     });
+    console.log(pdfBuffer, "pdfbuffer logged1")
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf`,

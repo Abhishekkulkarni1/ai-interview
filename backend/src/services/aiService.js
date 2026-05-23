@@ -274,6 +274,7 @@ const generatePdfFromHtml = async (htmlContent) => {
   })
 
   await browser.close()
+  console.log(pdfBuffer, "pdfBuffer logged 3");
   return pdfBuffer
 }
 
@@ -500,7 +501,8 @@ ${jobDescription}
 
   const jsonContent = JSON.parse(response.text)
 
-  const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
+  const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
+  console.log(pdfBuffer, "pdfBuffer logged 2")
   return pdfBuffer
 }
 
