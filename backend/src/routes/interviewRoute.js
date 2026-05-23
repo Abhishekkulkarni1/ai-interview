@@ -5,9 +5,9 @@ const upload = require("../middlewares/fileMiddleware");
 
 const interviewRouter = Router();
 
-interviewRouter.post("/ai/report", upload.single("resume"), generateAiInterviewReport);
-interviewRouter.get("/ai/report/:interviewId", getInterviewReportById);
-interviewRouter.get("/ai/allReports", getAllInterviewReports)
-interviewRouter.post("/ai/resume/pdf/:interviewReportId", downloadResumePdf)
+interviewRouter.post("/ai/report", authorize, upload.single("resume"), generateAiInterviewReport);
+interviewRouter.get("/ai/report/:interviewId", authorize , getInterviewReportById);
+interviewRouter.get("/ai/allReports", authorize, getAllInterviewReports)
+interviewRouter.post("/ai/resume/pdf/:interviewReportId", authorize, downloadResumePdf)
 
 module.exports = interviewRouter;

@@ -17,7 +17,7 @@ const generateAiInterviewReport = async (req, res) => {
     });
 
     const interviewReport = await interviewReportModel.create({
-      user: "69fef2d81182b98cb57a44f8",
+      user:  req.user.id,
       resume: resumeContent.text,
       selfDescription,
       jobDescription,
@@ -43,7 +43,7 @@ const getInterviewReportById = async (req, res) => {
 
     const interviewReport = await interviewReportModel.findOne({
       _id: interviewId,
-      user: "69fef2d81182b98cb57a44f8",
+      user: req.user.id,
     });
 
     if (!interviewReport) {
@@ -67,8 +67,9 @@ const getInterviewReportById = async (req, res) => {
 
 const getAllInterviewReports = async (req, res) => {
   try {
+    console.log(req.user.id)
     const interviewReports = await interviewReportModel
-      .find({ user: "69fef2d81182b98cb57a44f8" })
+      .find({ user: req.user.id })
       .sort({ createdAt: -1 })
       .select(
         "-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan",
