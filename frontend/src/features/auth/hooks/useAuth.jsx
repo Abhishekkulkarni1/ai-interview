@@ -52,12 +52,17 @@ export const useAuth = () => {
       setLoading(true);
       try {
         const data = await userDetails();
-        setUser(data.user);
+        if (data?.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
       } catch (error) {
         console.log(
           error,
           "Error occured while handling getting user in hooks",
         );
+        setUser(null);
       } finally {
         setLoading(false);
       }

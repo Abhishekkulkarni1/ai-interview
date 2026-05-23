@@ -41,7 +41,14 @@ const registerUser = async (req, res) => {
       { expiresIn: "1d" },
     );
 
-    res.cookie("token", token);
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+
+    res.cookie("token", token, cookieOptions);
     res.status(201).json({
       success: true,
       message: "User created succesfully",
@@ -92,7 +99,14 @@ const loginUser = async (req, res) => {
       { expiresIn: "1d" },
     );
 
-    res.cookie("token", token);
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+
+    res.cookie("token", token, cookieOptions);
     res.status(200).json({
       success: true,
       message: "User logged in successfully.",
@@ -114,11 +128,18 @@ const loginUser = async (req, res) => {
 const logoutUser = async (req, res) => {
   try {
     const token = req.cookies.token;
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+
     if (token) {
       await tokenBlacklistModel.create({ token });
     }
 
-    res.clearCookie("token");
+    res.clearCookie("token", cookieOptions);
 
     res.status(200).json({
       success: true,
